@@ -1,0 +1,200 @@
+You are a senior full-stack engineer. Build a complete production-ready MVP for a **Real Estate 360° Virtual Tour Platform** inspired by automotive virtual showrooms like Kia VR Showroom.
+
+## 🎯 Goal
+
+Create a full-stack web application where:
+
+* Sellers can upload 360° room images and create property listings
+* Buyers can explore properties using an interactive 360° viewer with hotspots and room navigation
+* The system supports a hybrid experience:
+
+  * Intro video (external, e.g., Google Earth Studio)
+  * Interactive 360° virtual tour (main feature)
+
+---
+
+## 🏗️ Tech Stack Requirements
+
+### Frontend
+
+* React (Vite)
+* Tailwind CSS
+* 360 Viewer: Pannellum (MVP), structured for future migration to Three.js
+* Axios for API calls
+
+### Backend
+
+* Node.js + Express
+* MongoDB (Mongoose)
+
+### Storage
+
+* Cloudinary (for image uploads)
+
+---
+
+## 📦 Features to Implement
+
+### 1. Seller Features
+
+* Create property listing (title, address, price)
+* Add rooms to listing
+* Upload 360° panoramic images per room
+* Add hotspots:
+
+  * navigation hotspots (link rooms)
+  * feature hotspots (text description)
+
+---
+
+### 2. Buyer Features
+
+* View property tour
+* Navigate rooms via:
+
+  * hotspots
+  * room selector (thumbnails)
+* Smooth transitions between rooms
+* Display hotspot tooltips
+
+---
+
+### 3. Core Viewer Features
+
+* 360° panorama rendering using Pannellum
+* Hotspot rendering with:
+
+  * yaw
+  * pitch
+* Scene switching (room-to-room navigation)
+
+---
+
+## 🧩 Database Schema
+
+### Listing
+
+* id
+* title
+* address
+* price
+* rooms (array of Room IDs)
+
+### Room
+
+* id
+* name
+* imageUrl
+* listingId
+* hotspots (array)
+
+### Hotspot
+
+* id
+* type ("navigation" | "feature")
+* yaw
+* pitch
+* targetRoomId (for navigation)
+* text
+* description
+
+---
+
+## 🔗 API Design
+
+Implement these endpoints:
+
+POST   /api/listings
+GET    /api/listings/:id
+
+POST   /api/rooms
+POST   /api/rooms/upload (image upload via Cloudinary)
+
+PUT    /api/rooms/:id/hotspots
+
+GET    /api/tour/:listingId
+
+---
+
+## 🖥️ Frontend Structure
+
+Create components:
+
+* TourViewer
+* PanoramaCanvas (Pannellum wrapper)
+* HotspotLayer
+* RoomSelectorBar
+* ListingPage
+
+---
+
+## 🎨 UI Requirements
+
+* Clean modern UI (inspired by car showroom)
+* Bottom room selector with thumbnails
+* Fullscreen 360 viewer
+* Minimal overlay controls
+* Responsive (mobile-friendly)
+
+---
+
+## ⚙️ Backend Requirements
+
+* Modular structure:
+
+  * routes/
+  * controllers/
+  * models/
+* Use async/await
+* Proper error handling
+* Use environment variables (.env)
+
+---
+
+## ☁️ Image Upload
+
+* Integrate Cloudinary
+* Return image URL after upload
+* Store in database
+
+---
+
+## 🚀 Extra (if possible)
+
+* Preload next room images
+* Basic loading spinner
+* Smooth fade transition between scenes
+
+---
+
+## 📁 Output Requirements
+
+Generate:
+
+1. Full folder structure
+2. All backend code
+3. All frontend code
+4. Sample API usage
+5. Instructions to run locally
+
+---
+
+## ❗ Important Constraints
+
+* Keep code clean and modular
+* Do NOT skip implementation details
+* Do NOT give pseudo code — provide real working code
+* Ensure the viewer actually renders 360° images
+
+---
+
+## 🎯 Final Output
+
+A working MVP where:
+
+* I can create a listing
+* Upload room images
+* Add hotspots
+* Open a tour and navigate between rooms interactively
+
+---

@@ -1,0 +1,22 @@
+Provisioning staff
+From backend/:
+
+npm run provision-staff -- admin you@company.com YourSecurePass "Your Name"
+or manager instead of admin. Uses MONGODB_URI from .env.
+
+Shared helper
+utils/roles.js exports isStaff, canEditListing, and role sets used by auth and controllers.
+
+If you want buyers blocked from GET /api/tour/:id unless logged in, or
+ field-level differences between admin vs manager, say what rules you want 
+ and we can wire them next.
+
+
+
+ node scripts/provisionStaff.js <admin|manager> <email> <password> <name>
+69d2d92ce8e169a7bda0425a 
+Tanmay
+tanmay.benda@gmail.com
+Tanmoy3011d7$*r
+admin 
+ 

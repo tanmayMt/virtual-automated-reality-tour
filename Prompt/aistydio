@@ -1,0 +1,61 @@
+
+"Act as a senior full-stack Full-Stack Developer and Software Architect. We are building a production-ready MVP for a Real Estate 360° Virtual Tour Platform inspired by automotive virtual showrooms (like Kia VR Showroom).
+Technology Stack:
+Database: MongoDB (using Mongoose)
+Backend: Node.js, Express.js
+Frontend: React.js (with Tailwind CSS for styling)
+360 Viewer: Pannellum (via pannellum-react)
+Storage: AWS S3 or Cloudinary (for 360° image storage)
+Core Architecture (MERN Stack):
+Seller Dashboard (React): A web interface where agents can create a listing, upload equirectangular 360° images for rooms, and place interactive navigation hotspots.
+Backend API (Node/Express): Handles image uploads via Multer, saves metadata to MongoDB, and serves tour data.
+Buyer Viewer (React): A public-facing WebGL viewer using Pannellum that fetches tour data and renders rooms and interactive hotspots.
+Database Schema Architecture (MongoDB):
+User: id, name, email, role (seller).
+Listing: id, sellerId (ref), address, price, propertyType, status.
+Room: id, listingId (ref), name, panoramaUrl, thumbnailUrl, initialYaw, initialPitch. Embedded sub-document: Hotspots[{ type, targetRoomId, pitch, yaw, text }].
+Reply with 'ACKNOWLEDGED' if you understand the stack and architecture. Do not write code yet. I will guide you phase by phase."
+🛠️ Phase 1: Backend Setup & MongoDB Models
+Once the AI acknowledges, paste this to build the backend.
+Prompt:
+"Let's build Phase 1: The Backend and Database.
+Initialize a basic Express.js server with CORS and error handling.
+Create the Mongoose models for User, Listing, and Room. Make sure the Room schema contains an embedded array for Hotspots (with fields: type [scene or info], targetRoomId[ObjectId ref to another room], pitch [Number], yaw [Number], text [String]).
+Create the REST API controllers and routes:
+POST /api/listings (Create listing)
+GET /api/listings/:id (Get listing details, including populated Rooms)
+POST /api/listings/:listingId/rooms (Add a room)
+PUT /api/rooms/:roomId/hotspots (Update hotspots array for a room)
+Create a Multer configuration for handling image uploads (mock the S3/Cloudinary upload for now by saving locally to a /uploads folder, returning the local URL).
+Provide the folder structure and the complete code for these backend files."
+💻 Phase 2: Frontend - The Seller Dashboard (Capture Flow)
+After the backend is built, paste this to create the upload interface.
+Prompt:
+"Now let's build Phase 2: The React Frontend - Seller Dashboard.
+Create the following components using React hooks and Tailwind CSS:
+Dashboard.jsx: Fetches and lists all properties created by the seller.
+CreateListing.jsx: A form to input property details (Address, Price) and POST to /api/listings.
+RoomManager.jsx: A component where the seller can upload a 360° image for a specific room. It should use FormData to POST the image to the backend.
+HotspotEditor.jsx: A view that loads the uploaded 360° image using pannellum-react. It must have a feature where clicking on the panorama logs the pitch and yaw coordinates, allowing the seller to add a navigation hotspot linking to another room, and saving it via the PUT /api/rooms/:roomId/hotspots endpoint.
+Ensure the code is modular, handles loading states, and uses Axios for API calls."
+🕶️ Phase 3: Frontend - The Buyer Viewer (360 Experience)
+This is the core interactive part inspired by the Kia Showroom.
+Prompt:
+"Let's build Phase 3: The public-facing Buyer Viewer Experience.
+Create a React component named VirtualTourViewer.jsx.
+Requirements:
+It takes a listingId from the URL parameters.
+On mount, it fetches the full listing and all associated rooms from GET /api/listings/:id.
+It uses pannellum-react to render the 360° image of the first room.
+It iterates over the room's Hotspots array. For 'scene' hotspots, it uses Pannellum.Hotspot to render clickable arrows.
+Interaction: When a user clicks a 'scene' hotspot, the viewer must smoothly transition (update the state of currentRoomId) to load the panoramaUrl of the target room.
+Add a UI overlay called RoomSelectorBar.jsx at the bottom of the screen (fixed absolute positioning) showing thumbnails/names of all rooms, allowing the buyer to click and jump directly to any room.
+Provide the full implementation with Tailwind styling for a premium, edge-to-edge full-screen look."
+🚀 Phase 4: Production Polish & Optimization (Optional but Recommended)
+Use this prompt to secure and optimize the app.
+Prompt:
+"Finally, let's polish the MVP for production.
+Image Optimization: Update the backend image upload logic to use Cloudinary (or AWS S3). Provide the updated controller code integrating the official Node.js SDK for cloud uploads.
+Preloading: Update the VirtualTourViewer.jsx to silently preload the panoramaUrl of connected rooms in the background so transitions are instantaneous.
+Error Handling: Add global error boundaries in React and an Express error middleware to catch unhandled promise rejections.
+Please provide the updated code snippets for these three improvements."

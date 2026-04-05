@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
+
+/* Pannellum sits above our chrome */
+.pnlm-container {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
