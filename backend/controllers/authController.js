@@ -10,7 +10,7 @@ const BCRYPT_ROUNDS = 12;
 
 function toPublicUser(userDoc) {
   return {
-    id: userDoc._id,
+    _id: userDoc._id,
     name: userDoc.name,
     email: userDoc.email,
     role: userDoc.role,
@@ -47,12 +47,15 @@ const register = asyncHandler(async (req, res) => {
   });
 
   const token = signToken(user._id, user.role);
+  const publicUser = toPublicUser(user);
 
   res.status(201).json({
     success: true,
+    token,
+    user: publicUser,
     data: {
       token,
-      user: toPublicUser(user),
+      user: publicUser,
     },
   });
 });
@@ -82,12 +85,15 @@ const login = asyncHandler(async (req, res) => {
   }
 
   const token = signToken(user._id, user.role);
+  const publicUser = toPublicUser(user);
 
   res.json({
     success: true,
+    token,
+    user: publicUser,
     data: {
       token,
-      user: toPublicUser(user),
+      user: publicUser,
     },
   });
 });

@@ -5,13 +5,57 @@ const asyncHandler = require('../middleware/asyncHandler');
 const AppError = require('../utils/AppError');
 const { isStaff } = require('../utils/roles');
 
-/**
- * GET /api/listings (admin, manager) — all listings with rooms and seller summary.
- */
-const listAllListings = asyncHandler(async (req, res) => {
+async function buildPublicListingSummaries() {
   const listings = await Listing.find()
     .sort({ createdAt: -1 })
-    .populate('sellerId', 'name email role')
+    .populate('rooms', 'imageUrl');
+  return listings.map((doc) => {
+    const o = doc.toObject();
+    const firstRoom = Array.isArray(o.rooms) && o.rooms.length > 0 ? o.rooms[0] : null;
+    const thumbnail = firstRoom?.imageUrl || null;
+    return {
+      _id: o._id,
+      title: o.title,
+      address: o.address,
+      price: o.price,
+      thumbnail,
+    };
+  });
+}
+
+/**
+ * GET /api/listings — public catalog (no auth or buyer role).
+ * Returns every listing with _id, title, address, price, thumbnail (first room image when set).
+ */
+const getAllListings = asyncHandler(async (req, res) => {
+  const data = await buildPublicListingSummaries();
+  res.json({ success: true, data });
+});
+
+/**
+ * GET /api/listings
+ * - No user or buyer: public catalog (same shape as getAllListings).
+ * - Staff: all listings (+ seller summary) with full rooms.
+ * - Seller: only own listings with full rooms.
+ */
+const listListings = asyncHandler(async (req, res) => {
+  if (!req.user || req.user.role === 'buyer') {
+    const data = await buildPublicListingSummaries();
+    res.json({ success: true, data });
+    return;
+  }
+
+  if (isStaff(req.user)) {
+    const listings = await Listing.find()
+      .sort({ createdAt: -1 })
+      .populate('sellerId', 'name email role')
+      .populate('rooms');
+    res.json({ success: true, data: listings });
+    return;
+  }
+
+  const listings = await Listing.find({ sellerId: req.user._id })
+    .sort({ createdAt: -1 })
     .populate('rooms');
 
   res.json({ success: true, data: listings });
@@ -79,7 +123,8 @@ const getListingById = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  listAllListings,
+  getAllListings,
+  listListings,
   createListing,
   getListingById,
 };

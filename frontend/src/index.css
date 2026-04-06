@@ -9,11 +9,132 @@ body,
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-slate-50 text-slate-900 antialiased;
 }
 
-/* Pannellum sits above our chrome */
+/* Pannellum — seller dashboard (rounded) */
 .pnlm-container {
   border-radius: 0.75rem;
   overflow: hidden;
+}
+
+/* Buyer tour — edge-to-edge */
+.tour-fullscreen .pnlm-container {
+  border-radius: 0;
+}
+
+.tour-fullscreen .pnlm-ui,
+.tour-fullscreen .pnlm-render-container {
+  border-radius: 0;
+}
+
+/* Navigation hotspot — arrow disc */
+.tour-nav-arrow {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  background: linear-gradient(145deg, rgba(45, 212, 191, 0.95), rgba(20, 184, 166, 0.88));
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tour-nav-arrow:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 28px rgba(45, 212, 191, 0.35),
+    0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.tour-nav-arrow::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 0.45rem solid transparent;
+  border-bottom: 0.45rem solid transparent;
+  border-left: 0.65rem solid rgba(15, 23, 42, 0.92);
+  margin-left: 0.15rem;
+}
+
+/* Feature hotspot — dot + popover */
+.tour-feature-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(45, 212, 191, 0.6);
+  transition: transform 0.2s ease;
+}
+
+.tour-feature-dot:hover {
+  transform: scale(1.15);
+}
+
+/* Feature hotspot — "info" icon (buyer viewer) */
+.tour-feature-info {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.9));
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.tour-feature-info:hover {
+  transform: scale(1.12);
+}
+
+.tour-feature-info::before {
+  content: 'i';
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+  margin-top: -0.05em;
+}
+
+.tour-feature-anchor {
+  position: relative;
+}
+
+.tour-feature-popover {
+  max-width: min(18rem, 70vw);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.tour-feature-popover-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.tour-feature-popover-desc {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.88);
 }

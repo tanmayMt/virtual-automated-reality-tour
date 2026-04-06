@@ -1,14 +1,10 @@
 const express = require('express');
-const {
-  listAllListings,
-  createListing,
-  getListingById,
-} = require('../controllers/listingController');
-const { authenticate, requireListingEditor, requireRoles } = require('../middleware/auth');
+const { listListings, createListing, getListingById } = require('../controllers/listingController');
+const { authenticate, optionalAuthenticate, requireListingEditor } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', authenticate, requireRoles('admin', 'manager'), listAllListings);
+router.get('/', optionalAuthenticate, listListings);
 router.post('/', authenticate, requireListingEditor, createListing);
 router.get('/:id', getListingById);
 

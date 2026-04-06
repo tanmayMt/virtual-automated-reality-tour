@@ -1,0 +1,110 @@
+
+Here is the ultimate, highly-optimized set of prompts designed to be fed into an advanced AI coding assistant (like Cursor, Claude 3.5 Sonnet, GitHub Copilot, or ChatGPT-4o).
+Because a full-stack application with real working code is too large for a single AI response without truncation or using placeholders, you must build this in 4 phases.
+Copy and paste these prompts one by one into your AI assistant.
+👑 The Master Context Prompt (Start Here)
+Paste this first to set the strict rules, tech stack, and architecture.
+Prompt 1: System Context & Rules
+code
+Text
+Act as a Senior Full-Stack Engineer and WebGL Specialist. We are building a complete, production-ready MVP for a "Real Estate 360° Virtual Tour Platform" inspired by the Kia VR Showroom. 
+
+We will build this phase-by-phase. DO NOT use pseudo-code. Provide complete, working, and modular code.
+
+TECH STACK:
+- Frontend: React.js (Vite), Tailwind CSS, Axios, Pannellum (via pannellum-react).
+- Backend: Node.js, Express.js, Multer.
+- Database: MongoDB (Mongoose).
+- Storage: Cloudinary (for 360° equirectangular image storage).
+
+DATABASE SCHEMA ARCHITECTURE:
+1. Listing: `id`, `title`, `address`, `price`, `rooms` (Array of Room ObjectIds).
+2. Room: `id`, `name`, `imageUrl`, `listingId` (ref), `hotspots` (Embedded Array).
+3. Hotspot: `type` (Enum: "navigation" | "feature"), `yaw` (Number), `pitch` (Number), `targetRoomId` (ObjectId, optional), `text` (String), `description` (String).
+
+PROJECT STRUCTURE:
+/backend (Node/Express)
+/frontend (React/Vite)
+
+Reply with "ACKNOWLEDGED - READY FOR PHASE 1" if you understand the strict constraints, tech stack, and schemas. Do not write any code yet.
+🛠️ Phase 1: Backend, Database & Cloudinary Setup
+Once the AI acknowledges, paste this to generate the backend API.
+Prompt 2: Backend Architecture
+code
+Text
+Let's execute Phase 1: Backend Setup.
+Generate the complete `/backend` folder structure and code.
+
+1. Setup `server.js` with Express, CORS, dotenv, and global error handling.
+2. Configure MongoDB connection in `config/db.js`.
+3. Configure Cloudinary and Multer in `config/cloudinary.js` for handling 360° image uploads.
+4. Create Mongoose models (`models/Listing.js`, `models/Room.js`) strictly following the schema from the Master Context. Hotspots should be an embedded subdocument in the Room model.
+5. Create controllers and routes:
+   - `POST /api/listings` & `GET /api/listings/:id`
+   - `POST /api/rooms` (Creates room)
+   - `POST /api/rooms/upload` (Uploads image to Cloudinary and returns URL)
+   - `PUT /api/rooms/:id/hotspots` (Updates the hotspots array)
+   - `GET /api/tour/:listingId` (Fetches the listing populated with all its rooms and hotspots).
+
+Output the full, working code for all backend files. Ensure modular routing and proper async/await error handling.
+💻 Phase 2: Frontend Setup & Seller Dashboard
+Paste this to build the React application and the admin upload flow.
+Prompt 3: Frontend & Seller Flow
+code
+Text
+Let's execute Phase 2: Frontend Setup and Seller Dashboard.
+Generate the code for the `/frontend` directory (assume initialized with Vite).
+
+1. Set up Tailwind CSS configuration and a basic React Router (`App.jsx`).
+2. Create an API utility file (`src/api/axios.js`) pointing to the backend.
+3. Create the `ListingPage.jsx` component: A modern UI where a seller can create a listing (title, address, price).
+4. Create the `RoomManager.jsx` component:
+   - Allows the seller to add a room name and upload a 360° image.
+   - Triggers the `/api/rooms/upload` endpoint using `FormData`.
+   - Shows a loading spinner during upload.
+5. Create `HotspotEditor.jsx`:
+   - Renders the uploaded 360° image using `pannellum-react`.
+   - Captures `pitch` and `yaw` on click.
+   - Provides a form to add a hotspot (select type: "navigation" or "feature", enter text, select target room if navigation).
+   - Saves the hotspot via `PUT /api/rooms/:id/hotspots`.
+
+Provide all component files. Keep the UI clean, modern, and styled with Tailwind. Do not skip import statements.
+🕶️ Phase 3: The 360° Buyer Viewer (Core Feature)
+This prompt builds the actual interactive virtual tour.
+Prompt 4: Buyer Virtual Tour Viewer
+code
+Text
+Let's execute Phase 3: The 360° Buyer Viewer.
+Create the public-facing tour components. 
+
+1. Create `TourViewer.jsx` (Page component):
+   - Takes `listingId` from URL.
+   - Fetches tour data from `GET /api/tour/:listingId`.
+   - Manages state for `currentRoomId`.
+2. Create `PanoramaCanvas.jsx`:
+   - Wraps the `Pannellum` viewer.
+   - Renders the current room's `imageUrl`.
+   - Maps over the room's `hotspots`. 
+   - If type is "navigation", use `Pannellum.Hotspot` to render a navigation arrow that, when clicked, updates `currentRoomId` to the `targetRoomId`.
+   - If type is "feature", display a custom tooltip with the `text` and `description`.
+3. Create `RoomSelectorBar.jsx`:
+   - A modern, absolute-positioned bottom bar.
+   - Maps through all rooms in the listing, displaying thumbnails (use Cloudinary URL transforms or just the image URL) and room names.
+   - Clicking a thumbnail changes the `currentRoomId`.
+
+Ensure full-screen edge-to-edge layout, responsive mobile-friendly CSS via Tailwind, and smooth transitions. Provide complete code for these components.
+🚀 Phase 4: Polish, Optimization & Run Instructions
+Final step to add production-ready features.
+Prompt 5: Optimization & Run Guide
+code
+Text
+Let's execute Phase 4: Polish and Documentation.
+
+1. Update `TourViewer.jsx` to implement **Preloading**: Silently preload the `imageUrl` of the next connected rooms (based on targetRoomIds in hotspots) so room-to-room transitions are instantaneous.
+2. Add a smooth CSS fade transition effect when switching between scenes in `PanoramaCanvas.jsx`.
+3. Write a comprehensive `README.md` that includes:
+   - Full project structure.
+   - Environment variables needed for both frontend and backend (MongoDB URI, Cloudinary Keys, Ports).
+   - Step-by-step instructions to install, run the backend, run the frontend, and test the full MVP locally.
+
+Ensure the code modifications are precise and the README is ready for a developer to follow instantl
