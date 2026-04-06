@@ -85,6 +85,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/property/:listingId" element={<PropertyIntro />} />
+        {/* Buyer 360° viewer — `listingId` in TourViewer via useParams() */}
         <Route path="/tour/:listingId" element={<TourViewer />} />
         <Route
           path="/buyer-dashboard"
@@ -121,6 +122,7 @@ export default function App() {
               </SellerOnlyRoute>
             }
           />
+          {/* Seller hotspot editor — `listingId` & `roomId` in HotspotEditor via useParams() */}
           <Route
             path="/seller/listing/:listingId/room/:roomId/hotspots"
             element={

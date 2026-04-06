@@ -145,16 +145,16 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
 
   if (!room || !imageUrl) {
     return (
-      <div className="flex h-full min-h-[100vh] w-full items-center justify-center bg-black px-4 text-center text-sm text-white">
+      <div className="flex h-screen w-screen items-center justify-center bg-black px-4 text-center text-sm text-white">
         No Room Data
       </div>
     );
   }
 
   return (
-    <div className="relative h-full min-h-[100vh] w-full bg-black">
+    <div className="relative h-screen w-screen bg-black">
       <div
-        className={`h-full min-h-[100vh] w-full transition-[opacity,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`h-screen w-screen transition-[opacity,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           sceneVisible ? 'opacity-100 blur-0' : 'opacity-0 blur-lg'
         }`}
       >

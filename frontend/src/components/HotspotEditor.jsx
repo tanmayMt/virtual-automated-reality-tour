@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Pannellum } from 'pannellum-react';
 import api from '../api/axios.js';
 
@@ -18,19 +18,18 @@ function formatAngle(n) {
 
 /**
  * Step 3: place hotspots on the 360° panorama (modal flow after canvas interaction).
- *
- * @param {object} props
- * @param {object} props.listing — populated listing with `rooms`
- * @param {object} props.room — current room (includes `hotspots`, `imageUrl`, `_id`)
- * @param {string} props.listingId
- * @param {string} props.roomId
- * @param {() => void} [props.onHotspotsSaved] — refetch parent listing after save
+ * Loads listing + room from `/seller/listing/:listingId/room/:roomId/hotspots`.
  */
-export default function HotspotEditor({ listing, room, listingId, roomId, onHotspotsSaved }) {
+export default function HotspotEditor() {
+  const { listingId, roomId } = useParams();
   const pannellumRef = useRef(null);
-  const [hotspots, setHotspots] = useState(() =>
-    Array.isArray(room?.hotspots) ? [...room.hotspots] : []
-  );
+
+  const [listing, setListing] = useState(null);
+  const [room, setRoom] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const [hotspots, setHotspots] = useState([]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingAngles, setPendingAngles] = useState(null);
@@ -39,8 +38,50 @@ export default function HotspotEditor({ listing, room, listingId, roomId, onHots
   const [featureDescription, setFeatureDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      const { data } = await api.get(`/listings/${listingId}`);
+      const list = data?.data;
+      setListing(list || null);
+
+      if (!list || !Array.isArray(list.rooms) || list.rooms.length === 0) {
+        setRoom(null);
+        setHotspots([]);
+        return;
+      }
+
+      const current = list.rooms.find((r) => String(r._id) === String(roomId));
+      if (!current) {
+        setRoom(null);
+        setHotspots([]);
+        setLoadError('Room not found on this listing.');
+        return;
+      }
+
+      setRoom(current);
+      setHotspots(Array.isArray(current.hotspots) ? [...current.hotspots] : []);
+    } catch (err) {
+      console.error('HotspotEditor: failed to load listing', err);
+      const msg = err.response?.data?.message || err.message || 'Failed to load';
+      setLoadError(msg);
+      setListing(null);
+      setRoom(null);
+      setHotspots([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [listingId, roomId]);
+
   useEffect(() => {
-    setHotspots(Array.isArray(room?.hotspots) ? [...room.hotspots] : []);
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (room) {
+      setHotspots(Array.isArray(room.hotspots) ? [...room.hotspots] : []);
+    }
   }, [room]);
 
   const otherRooms = useMemo(
@@ -118,10 +159,9 @@ export default function HotspotEditor({ listing, room, listingId, roomId, onHots
       const next = Array.isArray(updated?.hotspots) ? updated.hotspots : payload;
       setHotspots(next);
       closeModal();
-      if (typeof onHotspotsSaved === 'function') {
-        onHotspotsSaved();
-      }
+      await load();
     } catch (err) {
+      console.error('HotspotEditor: save hotspots failed', err);
       const msg = err.response?.data?.message || err.message || 'Save failed';
       window.alert(msg);
     } finally {
@@ -146,10 +186,48 @@ export default function HotspotEditor({ listing, room, listingId, roomId, onHots
     ));
   }, [hotspots]);
 
-  if (!imageUrl) {
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50 text-slate-700">
+        Loading Tour...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <Link
+          to={`/seller/listing/${listingId}/rooms`}
+          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          ← Back to rooms
+        </Link>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {loadError}
+        </div>
+      </div>
+    );
+  }
+
+  if (!listing || !Array.isArray(listing.rooms) || listing.rooms.length === 0) {
+    return (
+      <div className="flex min-h-[40vh] w-full flex-col items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
+        <p className="text-sm sm:text-base">No rooms found for this property.</p>
+        <Link
+          to={`/seller/listing/${listingId}/rooms`}
+          className="mt-6 text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          ← Back to rooms
+        </Link>
+      </div>
+    );
+  }
+
+  if (!room || !imageUrl) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-slate-500 shadow-sm">
-        This room has no panorama image.
+        {room && !imageUrl ? 'This room has no panorama image.' : 'Room could not be loaded.'}
       </div>
     );
   }
@@ -172,11 +250,11 @@ export default function HotspotEditor({ listing, room, listingId, roomId, onHots
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+      <div className="h-[80vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <Pannellum
           ref={pannellumRef}
           width="100%"
-          height="520px"
+          height="100%"
           image={imageUrl}
           pitch={0}
           yaw={0}
@@ -185,7 +263,7 @@ export default function HotspotEditor({ listing, room, listingId, roomId, onHots
           showControls
           onMouseup={handlePanoramaMouseUp}
         >
-          {hotspotElements}
+          {hotspotElements != null ? hotspotElements : []}
         </Pannellum>
       </div>
 

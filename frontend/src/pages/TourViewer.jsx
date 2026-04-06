@@ -9,23 +9,6 @@ import {
   preloadPanoramaImages,
 } from '../utils/preloadPanoramaImages.js';
 
-function LoadingSpinner() {
-  return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-black">
-      <div
-        className="h-12 w-12 rounded-full border-2 border-white/15 border-t-white shadow-[0_0_48px_rgba(255,255,255,0.12)]"
-        style={{ animation: 'tour-viewer-spin 0.85s linear infinite' }}
-      />
-      <p className="mt-6 text-sm font-medium tracking-[0.2em] text-white/45">LOADING TOUR</p>
-      <style>{`
-        @keyframes tour-viewer-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 function roomKey(r) {
   if (r == null) {
     return '';
@@ -99,13 +82,11 @@ export default function TourViewer() {
   useEffect(() => {
     let cancelled = false;
     async function loadTour() {
-      console.log('Listing ID:', listingId);
       setIsLoading(true);
       setLoadError('');
       try {
         const { data } = await api.get(`/tour/${listingId}`);
         const payload = data?.data;
-        console.log('Tour Data:', payload);
         if (cancelled) {
           return;
         }
@@ -119,7 +100,7 @@ export default function TourViewer() {
           setCurrentRoomId(null);
         }
       } catch (err) {
-        console.error('Tour load failed:', err);
+        console.error('TourViewer: tour load failed', err);
         if (cancelled) {
           return;
         }
@@ -142,16 +123,30 @@ export default function TourViewer() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-[200] h-[100vh] w-[100vw] overflow-hidden bg-black">
-        <LoadingSpinner />
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        Loading Tour...
       </div>
     );
   }
 
-  if (loadError || !tourData) {
+  if (loadError) {
     return (
       <div className="fixed inset-0 z-[200] flex h-[100vh] w-[100vw] flex-col items-center justify-center overflow-hidden bg-black px-6 text-center">
-        <p className="max-w-md text-sm text-red-300 sm:text-base">{loadError || 'Tour unavailable.'}</p>
+        <p className="max-w-md text-sm text-red-300 sm:text-base">{loadError}</p>
+        <Link
+          to="/"
+          className="mt-8 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20"
+        >
+          Back
+        </Link>
+      </div>
+    );
+  }
+
+  if (!tourData || !Array.isArray(tourData.rooms) || tourData.rooms.length === 0) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-black px-6 text-center text-white">
+        <p className="max-w-md text-sm sm:text-base">No rooms found for this property.</p>
         <Link
           to="/"
           className="mt-8 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20"
@@ -164,16 +159,16 @@ export default function TourViewer() {
 
   if (rooms.length > 0 && !currentRoom) {
     return (
-      <div className="fixed inset-0 z-[200] flex h-[100vh] w-[100vw] flex-col items-center justify-center overflow-hidden bg-black">
-        <p className="text-sm text-white">Loading Tour...</p>
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        Loading Tour...
       </div>
     );
   }
 
   return (
     <div className="tour-fullscreen fixed inset-0 z-[150] h-[100vh] w-[100vw] overflow-hidden bg-black">
-      {/* Full-screen 360° layer */}
-      <div className="absolute inset-0 h-full w-full">
+      {/* Full-screen 360° layer — explicit viewport size for Pannellum */}
+      <div className="absolute inset-0 h-screen w-screen">
         <PanoramaCanvas currentRoom={currentRoom} setCurrentRoomId={setCurrentRoomIdSafe} />
       </div>
 
@@ -199,12 +194,6 @@ export default function TourViewer() {
           </Link>
         </div>
       </header>
-
-      {rooms.length === 0 ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 px-6 text-center backdrop-blur-sm">
-          <p className="text-sm text-white/85">This listing has no rooms yet.</p>
-        </div>
-      ) : null}
 
       <RoomSelectorBar
         rooms={rooms}
