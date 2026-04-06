@@ -53,6 +53,10 @@ export default function PropertyIntro() {
     navigate(`/tour/${listingId}`);
   }
 
+  const hasVideo = typeof listing?.introVideoUrl === 'string' && listing.introVideoUrl.trim() !== '';
+  const addressQuery = encodeURIComponent(listing?.address || '');
+  const mapEmbedUrl = `https://www.google.com/maps?q=${addressQuery}&z=16&output=embed`;
+
   if (loading) {
     return <IntroSkeleton />;
   }
@@ -75,7 +79,7 @@ export default function PropertyIntro() {
 
   return (
     <section className="fixed inset-0 h-screen w-screen overflow-hidden bg-black text-white">
-      {listing.introVideoUrl ? (
+      {hasVideo ? (
         <video
           className="h-full w-full object-cover"
           src={listing.introVideoUrl}
@@ -86,7 +90,24 @@ export default function PropertyIntro() {
           onEnded={enterTour}
         />
       ) : (
-        <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.28),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(15,23,42,0.85),rgba(2,6,23,1))]" />
+        <div className="relative h-full w-full overflow-hidden">
+          <div className="absolute inset-0 scale-110 animate-[droneSweep_18s_ease-in-out_infinite_alternate]">
+            <iframe
+              title="Property location map"
+              src={mapEmbedUrl}
+              className="h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,0.18)_45%,rgba(0,0,0,0.55)_100%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.85)]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/80 animate-ping" />
+          <div className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-sm">
+            Drone-style location preview
+          </div>
+        </div>
       )}
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/35" />
@@ -115,6 +136,12 @@ export default function PropertyIntro() {
           Enter Virtual Tour
         </button>
       </div>
+      <style>{`
+        @keyframes droneSweep {
+          0% { transform: scale(1.08) translate3d(-2%, -1%, 0); }
+          100% { transform: scale(1.18) translate3d(2%, 1.5%, 0); }
+        }
+      `}</style>
     </section>
   );
 }
