@@ -7,25 +7,17 @@ export default function CreateListing() {
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [price, setPrice] = useState('');
-  const [lat, setLat] = useState('');
-  const [lng, setLng] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = {
+      const { data } = await api.post('/listings', {
         title: title.trim(),
         address: address.trim(),
         price: Number(price),
-      };
-      const latNum = lat.trim() === '' ? null : Number(lat);
-      const lngNum = lng.trim() === '' ? null : Number(lng);
-      if (latNum != null && lngNum != null && Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-        payload.location = { lat: latNum, lng: lngNum };
-      }
-      const { data } = await api.post('/listings', payload);
+      });
       const listing = data?.data;
       const listingId = listing?._id || listing?.id;
       if (!listingId) {
@@ -100,38 +92,6 @@ export default function CreateListing() {
               disabled={loading}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none ring-blue-500/30 transition focus:border-blue-500 focus:ring-2 disabled:opacity-60"
             />
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="cl-lat" className="block text-sm font-medium text-slate-700">
-                Latitude (optional, for intro map)
-              </label>
-              <input
-                id="cl-lat"
-                type="text"
-                inputMode="decimal"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="e.g. 34.0522"
-                disabled={loading}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none ring-blue-500/30 transition focus:border-blue-500 focus:ring-2 disabled:opacity-60"
-              />
-            </div>
-            <div>
-              <label htmlFor="cl-lng" className="block text-sm font-medium text-slate-700">
-                Longitude (optional)
-              </label>
-              <input
-                id="cl-lng"
-                type="text"
-                inputMode="decimal"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="e.g. -118.2437"
-                disabled={loading}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none ring-blue-500/30 transition focus:border-blue-500 focus:ring-2 disabled:opacity-60"
-              />
-            </div>
           </div>
           <button
             type="submit"

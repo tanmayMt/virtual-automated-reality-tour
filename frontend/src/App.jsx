@@ -84,10 +84,9 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        {/* Public listing intro — `id` → GET /api/listings/:id */}
-        <Route path="/property/:id" element={<PropertyIntro />} />
-        {/* Buyer 360° viewer — `id` is listing id */}
-        <Route path="/tour/:id" element={<TourViewer />} />
+        <Route path="/property/:listingId" element={<PropertyIntro />} />
+        {/* Buyer 360° viewer — `listingId` in TourViewer via useParams() */}
+        <Route path="/tour/:listingId" element={<TourViewer />} />
         <Route
           path="/buyer-dashboard"
           element={

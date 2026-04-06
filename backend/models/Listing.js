@@ -22,11 +22,6 @@ const listingSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
-    /** Geocoordinates for intro map / satellite hero (optional). */
-    location: {
-      lat: { type: Number, default: null },
-      lng: { type: Number, default: null },
-    },
     rooms: [
       {
         type: mongoose.Schema.Types.ObjectId,
