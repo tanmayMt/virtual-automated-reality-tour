@@ -17,7 +17,7 @@ export default function PropertyCard({ listing }) {
 
   function handleClick() {
     if (id) {
-      navigate(`/tour/${id}`);
+      navigate(`/property/${id}`);
     }
   }
 

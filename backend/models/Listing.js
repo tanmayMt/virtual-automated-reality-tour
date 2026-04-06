@@ -17,6 +17,11 @@ const listingSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    introVideoUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     rooms: [
       {
         type: mongoose.Schema.Types.ObjectId,

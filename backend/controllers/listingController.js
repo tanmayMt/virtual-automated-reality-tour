@@ -68,7 +68,7 @@ const listListings = asyncHandler(async (req, res) => {
  * - Admin/manager: optional sellerId assigns an existing seller as owner; otherwise defaults to self.
  */
 const createListing = asyncHandler(async (req, res) => {
-  const { title, address, price, rooms, sellerId: bodySellerId } = req.body;
+  const { title, address, price, rooms, introVideoUrl, sellerId: bodySellerId } = req.body;
 
   if (title == null || address == null || price == null) {
     throw new AppError('title, address, and price are required', 400);
@@ -99,6 +99,7 @@ const createListing = asyncHandler(async (req, res) => {
     title: String(title).trim(),
     address: String(address).trim(),
     price: priceNum,
+    introVideoUrl: typeof introVideoUrl === 'string' ? introVideoUrl.trim() : '',
     rooms: Array.isArray(rooms) ? rooms : [],
     sellerId: ownerId,
   });

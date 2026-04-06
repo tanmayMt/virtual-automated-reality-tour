@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
 import SellerDashboard from './pages/SellerDashboard.jsx';
 import CreateListing from './pages/CreateListing.jsx';
+import PropertyIntro from './pages/PropertyIntro.jsx';
 import TourViewer from './pages/TourViewer.jsx';
 import HotspotEditorPage from './pages/HotspotEditorPage.jsx';
 import RoomManager from './components/RoomManager.jsx';
@@ -83,6 +84,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/property/:listingId" element={<PropertyIntro />} />
         <Route path="/tour/:listingId" element={<TourViewer />} />
         <Route
           path="/buyer-dashboard"
