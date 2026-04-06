@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "title": "Skyline Penthouse — Downtown",
+    "address": "123 Example Ave, Los Angeles, CA",
+    "price": 2450000,
+    "introVideoUrl": "https://example.com/videos/intro.mp4",
+    "location": {
+      "lat": 34.0522,
+      "lng": -118.2437
+    },
+    "rooms": [],
+    "sellerId": null,
+    "createdAt": "2026-04-01T12:00:00.000Z",
+    "updatedAt": "2026-04-01T12:00:00.000Z"
+  }
+}

@@ -23,7 +23,7 @@ function roomKey(r) {
 }
 
 export default function TourViewer() {
-  const { listingId } = useParams();
+  const { id: listingId } = useParams();
   const [tourData, setTourData] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

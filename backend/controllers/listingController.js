@@ -67,6 +67,19 @@ const listListings = asyncHandler(async (req, res) => {
  * - Seller: owner is always the authenticated user.
  * - Admin/manager: optional sellerId assigns an existing seller as owner; otherwise defaults to self.
  */
+function parseLocation(body) {
+  const loc = body?.location;
+  if (!loc || typeof loc !== 'object') {
+    return { lat: null, lng: null };
+  }
+  const lat = Number(loc.lat);
+  const lng = Number(loc.lng);
+  return {
+    lat: Number.isFinite(lat) && Math.abs(lat) <= 90 ? lat : null,
+    lng: Number.isFinite(lng) && Math.abs(lng) <= 180 ? lng : null,
+  };
+}
+
 const createListing = asyncHandler(async (req, res) => {
   const { title, address, price, rooms, introVideoUrl, sellerId: bodySellerId } = req.body;
 
@@ -100,6 +113,7 @@ const createListing = asyncHandler(async (req, res) => {
     address: String(address).trim(),
     price: priceNum,
     introVideoUrl: typeof introVideoUrl === 'string' ? introVideoUrl.trim() : '',
+    location: parseLocation(req.body),
     rooms: Array.isArray(rooms) ? rooms : [],
     sellerId: ownerId,
   });
