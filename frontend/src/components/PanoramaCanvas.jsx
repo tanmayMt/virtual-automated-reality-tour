@@ -11,6 +11,11 @@ function normalizeTargetId(raw) {
   return String(raw);
 }
 
+function toFiniteNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 /**
  * Full-screen 360° viewer with navigation + feature hotspots.
  *
@@ -33,22 +38,14 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
     setRoomRef.current(id);
   }, []);
 
-  const featureTooltip = useCallback((hotSpotDiv, args) => {
-    hotSpotDiv.classList.add('tour-feature-anchor');
-    const inner = document.createElement('div');
-    inner.className = 'tour-feature-popover';
-    const titleEl = document.createElement('div');
-    titleEl.className = 'tour-feature-popover-title';
-    titleEl.textContent = args?.text || 'Feature';
-    inner.appendChild(titleEl);
-    const desc = (args?.description || '').trim();
-    if (desc) {
-      const p = document.createElement('p');
-      p.className = 'tour-feature-popover-desc';
-      p.textContent = desc;
-      inner.appendChild(p);
+  const navTooltip = useCallback((hotSpotDiv, args) => {
+    if (!hotSpotDiv || hotSpotDiv.querySelector('.tour-nav-tooltip')) {
+      return;
     }
-    hotSpotDiv.appendChild(inner);
+    const label = document.createElement('div');
+    label.className = 'tour-nav-tooltip';
+    label.textContent = args?.label || 'Go to room';
+    hotSpotDiv.appendChild(label);
   }, []);
 
   const handleFeatureClick = useCallback((_event, args) => {
@@ -56,6 +53,18 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
       text: args?.text || 'Feature',
       description: (args?.description || '').trim(),
     });
+  }, []);
+
+  const featureHoverLabel = useCallback((hotSpotDiv, args) => {
+    if (!hotSpotDiv) {
+      return;
+    }
+    const label = (args?.label || '').trim();
+    if (label.length > 0) {
+      hotSpotDiv.setAttribute('data-feature-label', label);
+    } else {
+      hotSpotDiv.removeAttribute('data-feature-label');
+    }
   }, []);
 
   const hotspots = currentRoom?.hotspots;
@@ -66,7 +75,13 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
     }
 
     return hotspots.map((h, idx) => {
-      const key = h._id || `hs-${idx}-${h.yaw}-${h.pitch}`;
+      const yaw = toFiniteNumber(h?.yaw);
+      const pitch = toFiniteNumber(h?.pitch);
+      if (yaw == null || pitch == null) {
+        return null;
+      }
+
+      const key = h._id || `hs-${idx}-${yaw}-${pitch}`;
 
       if (h.type === 'navigation') {
         const targetId = normalizeTargetId(h.targetRoomId);
@@ -77,9 +92,11 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
           <Pannellum.Hotspot
             key={key}
             type="custom"
-            pitch={h.pitch}
-            yaw={h.yaw}
+            pitch={pitch}
+            yaw={yaw}
             cssClass="tour-nav-arrow"
+            tooltip={navTooltip}
+            tooltipArg={{ label: h.text || 'Go to room' }}
             handleClick={handleNavClick}
             handleClickArg={{ targetRoomId: targetId }}
           />
@@ -91,11 +108,11 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
           <Pannellum.Hotspot
             key={key}
             type="custom"
-            pitch={h.pitch}
-            yaw={h.yaw}
+            pitch={pitch}
+            yaw={yaw}
             cssClass="tour-feature-info"
-            tooltip={featureTooltip}
-            tooltipArg={{ text: h.text || '', description: h.description || '' }}
+            tooltip={featureHoverLabel}
+            tooltipArg={{ label: h.text || 'Feature' }}
             handleClick={handleFeatureClick}
             handleClickArg={{ text: h.text || '', description: h.description || '' }}
           />
@@ -104,7 +121,7 @@ export default function PanoramaCanvas({ currentRoom, setCurrentRoomId }) {
 
       return null;
     });
-  }, [hotspots, handleNavClick, handleFeatureClick, featureTooltip]);
+  }, [hotspots, handleNavClick, navTooltip, handleFeatureClick, featureHoverLabel]);
 
   const room = currentRoom;
   const imageUrl =

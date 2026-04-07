@@ -42,12 +42,12 @@ body {
   align-items: center;
   justify-content: center;
   transition:
-    transform 0.2s ease,
+    filter 0.2s ease,
     box-shadow 0.2s ease;
 }
 
 .tour-nav-arrow:hover {
-  transform: scale(1.08);
+  filter: brightness(1.08);
   box-shadow:
     0 6px 28px rgba(45, 212, 191, 0.35),
     0 0 0 2px rgba(255, 255, 255, 0.4);
@@ -61,6 +61,46 @@ body {
   border-bottom: 0.45rem solid transparent;
   border-left: 0.65rem solid rgba(15, 23, 42, 0.92);
   margin-left: 0.15rem;
+}
+
+/* Navigation hotspot label (shown on hover/focus) */
+.tour-nav-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translateX(-50%) translateY(4px);
+  min-width: max-content;
+  max-width: min(14rem, 62vw);
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(2, 6, 23, 0.9);
+  color: rgba(255, 255, 255, 0.97);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 1;
+  pointer-events: none;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  transition: transform 0.16s ease;
+}
+
+.tour-nav-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border-left: 0.35rem solid transparent;
+  border-right: 0.35rem solid transparent;
+  border-top: 0.42rem solid rgba(2, 6, 23, 0.9);
+}
+
+.tour-nav-arrow .tour-nav-tooltip {
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Feature hotspot — dot + popover */
@@ -93,11 +133,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
+  transition:
+    filter 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .tour-feature-info:hover {
-  transform: scale(1.12);
+  filter: brightness(1.1);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(255, 255, 255, 0.34);
 }
 
 .tour-feature-info::before {
@@ -109,6 +154,37 @@ body {
   color: rgba(255, 255, 255, 0.95);
   line-height: 1;
   margin-top: -0.05em;
+}
+
+/* Feature hotspot name on mouseover */
+.tour-feature-info[data-feature-label]:hover::after,
+.tour-feature-info[data-feature-label]:focus-visible::after {
+  content: attr(data-feature-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translateX(-50%);
+  min-width: max-content;
+  max-width: min(14rem, 62vw);
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(2, 6, 23, 0.92);
+  color: rgba(255, 255, 255, 0.97);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 4;
+}
+
+.tour-feature-info[data-feature-label]:hover::before,
+.tour-feature-info[data-feature-label]:focus-visible::before {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.95);
 }
 
 .tour-feature-anchor {

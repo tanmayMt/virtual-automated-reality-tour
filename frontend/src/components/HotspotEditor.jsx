@@ -16,6 +16,11 @@ function formatAngle(n) {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : '—';
 }
 
+function toFiniteNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 /**
  * Step 3: place hotspots on the 360° panorama (modal flow after canvas interaction).
  * Loads listing + room from `/seller/listing/:listingId/room/:roomId/hotspots`.
@@ -89,17 +94,40 @@ export default function HotspotEditor() {
     [listing?.rooms, roomId]
   );
 
-  const handlePanoramaMouseUp = useCallback(() => {
+  const handlePanoramaMouseUp = useCallback((event) => {
     const inst = pannellumRef.current;
     if (!inst || typeof inst.getViewer !== 'function') {
       return;
     }
     const viewer = inst.getViewer();
-    if (!viewer || typeof viewer.getYaw !== 'function' || typeof viewer.getPitch !== 'function') {
+    if (!viewer) {
       return;
     }
-    const yaw = viewer.getYaw();
-    const pitch = viewer.getPitch();
+    let yaw = null;
+    let pitch = null;
+
+    // Accurate click capture: map mouse event -> pano coordinates.
+    if (event && typeof viewer.mouseEventToCoords === 'function') {
+      try {
+        const coords = viewer.mouseEventToCoords(event);
+        if (Array.isArray(coords) && coords.length >= 2) {
+          pitch = toFiniteNumber(coords[0]);
+          yaw = toFiniteNumber(coords[1]);
+        }
+      } catch (err) {
+        console.error('HotspotEditor: mouseEventToCoords failed', err);
+      }
+    }
+
+    // Fallback to view center if click mapping is unavailable.
+    if ((yaw == null || pitch == null) && typeof viewer.getYaw === 'function' && typeof viewer.getPitch === 'function') {
+      yaw = toFiniteNumber(viewer.getYaw());
+      pitch = toFiniteNumber(viewer.getPitch());
+    }
+    if (yaw == null || pitch == null) {
+      return;
+    }
+
     setPendingAngles({ yaw, pitch });
     setHotspotType('navigation');
     setTargetRoomId('');
@@ -142,10 +170,13 @@ export default function HotspotEditor() {
       text = description.length > 72 ? `${description.slice(0, 72)}…` : description;
     }
 
+    const normalizedYaw = Math.round(pendingAngles.yaw * 10000) / 10000;
+    const normalizedPitch = Math.round(pendingAngles.pitch * 10000) / 10000;
+
     const newHotspot = {
       type: hotspotType,
-      yaw: pendingAngles.yaw,
-      pitch: pendingAngles.pitch,
+      yaw: normalizedYaw,
+      pitch: normalizedPitch,
       text,
       description,
       targetRoomId: hotspotType === 'navigation' ? navTarget : null,
