@@ -1,6 +1,28 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+/**
+ * Normalize API base so both of these work on Vercel:
+ *   https://your-api.onrender.com
+ *   https://your-api.onrender.com/api
+ * Backend routes always live under /api.
+ */
+function resolveApiBaseUrl(raw) {
+  const fallback = '/api';
+  if (raw == null || String(raw).trim() === '') {
+    return fallback;
+  }
+  let url = String(raw).trim().replace(/\/+$/, '');
+  if (url === '/api' || url.endsWith('/api')) {
+    return url;
+  }
+  // Absolute host without /api → append it
+  if (/^https?:\/\//i.test(url)) {
+    return `${url}/api`;
+  }
+  return url.startsWith('/') ? url : `/${url}`;
+}
+
+const baseURL = resolveApiBaseUrl(import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL,
