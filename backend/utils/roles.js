@@ -23,7 +23,14 @@ function canEditListing(user, listing) {
   if (isStaff(user)) {
     return true;
   }
-  return Boolean(listing.sellerId && listing.sellerId.equals(user._id));
+  if (!listing.sellerId || !user._id) {
+    return false;
+  }
+  const ownerId =
+    typeof listing.sellerId === 'object' && listing.sellerId !== null
+      ? listing.sellerId._id || listing.sellerId.id
+      : listing.sellerId;
+  return String(ownerId) === String(user._id);
 }
 
 module.exports = {

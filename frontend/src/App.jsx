@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
 import SellerDashboard from './pages/SellerDashboard.jsx';
 import CreateListing from './pages/CreateListing.jsx';
+import EditListing from './pages/EditListing.jsx';
 import PropertyIntro from './pages/PropertyIntro.jsx';
 import TourViewer from './pages/TourViewer.jsx';
 import HotspotEditorPage from './pages/HotspotEditorPage.jsx';
@@ -37,7 +38,9 @@ function AppHeader() {
           className="text-lg font-semibold tracking-tight text-slate-900 transition hover:text-blue-700 dark:text-white"
         >
           Virtual Tour
-          <span className="ml-2 text-sm font-normal text-slate-500">Seller</span>
+          <span className="ml-2 text-sm font-normal text-slate-500">
+            {user.role === 'admin' || user.role === 'manager' ? 'Staff' : 'Seller'}
+          </span>
         </NavLink>
         <nav className="flex flex-wrap items-center gap-2 text-sm">
           <NavLink
@@ -112,6 +115,14 @@ export default function App() {
             element={
               <SellerOnlyRoute>
                 <CreateListing />
+              </SellerOnlyRoute>
+            }
+          />
+          <Route
+            path="/seller/listing/:listingId/edit"
+            element={
+              <SellerOnlyRoute>
+                <EditListing />
               </SellerOnlyRoute>
             }
           />

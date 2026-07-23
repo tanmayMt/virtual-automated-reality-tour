@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios.js';
+import { getStoredUser } from '../utils/authStorage.js';
 
 function Spinner({ className = '' }) {
   return (
@@ -12,12 +13,13 @@ function Spinner({ className = '' }) {
 }
 
 /**
- * Step 2: upload 360° images and create rooms for a listing.
- * @param {{ listingId?: string }} props — `listingId` optional if route provides `:listingId`
+ * Step 2: manage rooms — add, rename, replace photo, reorder (switcher order), delete.
+ * Sellers edit own listings; admin/manager can edit any.
  */
 export default function RoomManager({ listingId: listingIdProp }) {
   const { listingId: listingIdFromRoute } = useParams();
   const listingId = listingIdProp ?? listingIdFromRoute;
+  const user = getStoredUser();
 
   const [listing, setListing] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -27,6 +29,7 @@ export default function RoomManager({ listingId: listingIdProp }) {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState('');
   const [success, setSuccess] = useState('');
+  const [busyRoomId, setBusyRoomId] = useState('');
 
   const loadListing = useCallback(async () => {
     if (!listingId) {
@@ -101,8 +104,94 @@ export default function RoomManager({ listingId: listingIdProp }) {
     }
   }
 
+  async function renameRoom(room) {
+    const next = window.prompt('Room name', room.name || '');
+    if (next == null) {
+      return;
+    }
+    const name = next.trim();
+    if (!name) {
+      window.alert('Name cannot be empty.');
+      return;
+    }
+    setBusyRoomId(room._id);
+    try {
+      await api.patch(`/rooms/${room._id}`, { name });
+      await loadListing();
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Rename failed');
+    } finally {
+      setBusyRoomId('');
+    }
+  }
+
+  async function replacePhoto(room, fileObj) {
+    if (!fileObj) {
+      return;
+    }
+    setBusyRoomId(room._id);
+    try {
+      const formData = new FormData();
+      formData.append('image', fileObj);
+      const uploadRes = await api.post('/rooms/upload', formData);
+      const imageUrl =
+        uploadRes.data?.data?.url ||
+        uploadRes.data?.data?.imageUrl ||
+        uploadRes.data?.data?.secure_url;
+      if (!imageUrl) {
+        throw new Error('No image URL returned');
+      }
+      await api.patch(`/rooms/${room._id}`, { imageUrl });
+      await loadListing();
+      setSuccess(`Photo updated for “${room.name}”.`);
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Photo replace failed');
+    } finally {
+      setBusyRoomId('');
+    }
+  }
+
+  async function removeRoom(room) {
+    if (!window.confirm(`Delete room “${room.name}”? Hotspots in this room will be removed.`)) {
+      return;
+    }
+    setBusyRoomId(room._id);
+    try {
+      await api.delete(`/rooms/${room._id}`);
+      await loadListing();
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Delete failed');
+    } finally {
+      setBusyRoomId('');
+    }
+  }
+
+  async function moveRoom(index, direction) {
+    const rooms = listing?.rooms || [];
+    const target = index + direction;
+    if (target < 0 || target >= rooms.length) {
+      return;
+    }
+    const next = [...rooms];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    const roomIds = next.map((r) => r._id);
+    setBusyRoomId(rooms[index]._id);
+    try {
+      const { data } = await api.put(`/listings/${listingId}/rooms/order`, { roomIds });
+      setListing(data?.data || listing);
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Reorder failed');
+      await loadListing();
+    } finally {
+      setBusyRoomId('');
+    }
+  }
+
   const busy = uploading || creating;
   const rooms = listing?.rooms || [];
+  const roleLabel =
+    user?.role === 'admin' || user?.role === 'manager' ? 'Staff editor' : 'Seller editor';
 
   if (!listingId) {
     return (
@@ -138,14 +227,29 @@ export default function RoomManager({ listingId: listingIdProp }) {
         >
           ← Dashboard
         </Link>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-blue-600">Step 2 of 3</p>
+        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <Link
+            to={`/seller/listing/${listingId}/edit`}
+            className="font-medium text-slate-700 underline-offset-2 hover:underline"
+          >
+            Edit property details
+          </Link>
+          <Link
+            to={`/tour/${listingId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-700 underline-offset-2 hover:underline"
+          >
+            Preview tour
+          </Link>
+        </div>
+        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-blue-600">
+          Step 2 of 3 · {roleLabel}
+        </p>
         <h1 className="mt-1 text-3xl font-semibold text-slate-900">{listing.title}</h1>
         <p className="mt-1 text-slate-600">{listing.address}</p>
         <p className="mt-2 text-sm text-slate-500">
-          Price:{' '}
-          <span className="font-medium text-slate-800">
-            {typeof listing.price === 'number' ? `$${listing.price.toLocaleString()}` : listing.price}
-          </span>
+          Room order below is the tour room switcher order (first = start room).
         </p>
       </div>
 
@@ -208,9 +312,9 @@ export default function RoomManager({ listingId: listingIdProp }) {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Rooms</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Rooms &amp; switcher order</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Place navigation and feature hotspots in the editor.
+            Rename, replace photo, reorder, delete, or edit navigation/feature hotspots.
           </p>
           <ul className="mt-6 space-y-3">
             {rooms.length === 0 ? (
@@ -218,26 +322,97 @@ export default function RoomManager({ listingId: listingIdProp }) {
                 No rooms yet. Add your first panorama.
               </li>
             ) : (
-              rooms.map((room) => (
-                <li
-                  key={room._id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium text-slate-900">{room.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {room.hotspots?.length || 0} hotspot
-                      {(room.hotspots?.length || 0) === 1 ? '' : 's'}
-                    </p>
-                  </div>
-                  <Link
-                    to={`/seller/listing/${listingId}/room/${room._id}/hotspots`}
-                    className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+              rooms.map((room, index) => {
+                const id = room._id;
+                const roomBusy = String(busyRoomId) === String(id);
+                return (
+                  <li
+                    key={id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3"
                   >
-                    Edit hotspots
-                  </Link>
-                </li>
-              ))
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 gap-3">
+                        {room.imageUrl ? (
+                          <img
+                            src={room.imageUrl}
+                            alt=""
+                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-xs text-slate-500">
+                            No img
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">
+                            {index + 1}. {room.name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {room.hotspots?.length || 0} hotspot
+                            {(room.hotspots?.length || 0) === 1 ? '' : 's'}
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to={`/seller/listing/${listingId}/room/${id}/hotspots`}
+                        className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                      >
+                        Edit hotspots
+                      </Link>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={roomBusy || index === 0}
+                        onClick={() => moveRoom(index, -1)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+                      >
+                        ↑ Up
+                      </button>
+                      <button
+                        type="button"
+                        disabled={roomBusy || index === rooms.length - 1}
+                        onClick={() => moveRoom(index, 1)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+                      >
+                        ↓ Down
+                      </button>
+                      <button
+                        type="button"
+                        disabled={roomBusy}
+                        onClick={() => renameRoom(room)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+                      >
+                        Rename
+                      </button>
+                      <label className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40">
+                        Replace photo
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          disabled={roomBusy}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = '';
+                            if (f) {
+                              replacePhoto(room, f);
+                            }
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={roomBusy}
+                        onClick={() => removeRoom(room)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 disabled:opacity-40"
+                      >
+                        {roomBusy ? '…' : 'Delete'}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })
             )}
           </ul>
         </div>

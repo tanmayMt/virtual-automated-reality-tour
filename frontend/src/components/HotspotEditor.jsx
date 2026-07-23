@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom';
 import { Pannellum } from 'pannellum-react';
 import api from '../api/axios.js';
+import { getStoredUser } from '../utils/authStorage.js';
 
 function Spinner({ className = '' }) {
   return (
@@ -21,13 +22,28 @@ function toFiniteNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function serializeHotspot(h) {
+  return {
+    type: h.type,
+    yaw: h.yaw,
+    pitch: h.pitch,
+    text: h.text || '',
+    description: h.description || '',
+    targetRoomId: h.targetRoomId
+      ? typeof h.targetRoomId === 'object'
+        ? String(h.targetRoomId._id || h.targetRoomId)
+        : String(h.targetRoomId)
+      : null,
+  };
+}
+
 /**
- * Step 3: place hotspots on the 360° panorama (modal flow after canvas interaction).
- * Loads listing + room from `/seller/listing/:listingId/room/:roomId/hotspots`.
+ * Step 3: add / edit / delete navigation & feature hotspots (seller + admin/manager).
  */
 export default function HotspotEditor() {
   const { listingId, roomId } = useParams();
   const pannellumRef = useRef(null);
+  const user = getStoredUser();
 
   const [listing, setListing] = useState(null);
   const [room, setRoom] = useState(null);
@@ -37,6 +53,7 @@ export default function HotspotEditor() {
   const [hotspots, setHotspots] = useState([]);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editIndex, setEditIndex] = useState(null);
   const [pendingAngles, setPendingAngles] = useState(null);
   const [hotspotType, setHotspotType] = useState('navigation');
   const [targetRoomId, setTargetRoomId] = useState('');
@@ -83,16 +100,43 @@ export default function HotspotEditor() {
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (room) {
-      setHotspots(Array.isArray(room.hotspots) ? [...room.hotspots] : []);
-    }
-  }, [room]);
-
   const otherRooms = useMemo(
     () => (listing?.rooms || []).filter((r) => String(r._id) !== String(roomId)),
     [listing?.rooms, roomId]
   );
+
+  function openCreateModal(yaw, pitch) {
+    setEditIndex(null);
+    setPendingAngles({ yaw, pitch });
+    setHotspotType('navigation');
+    setTargetRoomId('');
+    setFeatureDescription('');
+    setModalOpen(true);
+  }
+
+  function openEditModal(index) {
+    const h = hotspots[index];
+    if (!h) {
+      return;
+    }
+    setEditIndex(index);
+    setPendingAngles({ yaw: Number(h.yaw), pitch: Number(h.pitch) });
+    setHotspotType(h.type === 'feature' ? 'feature' : 'navigation');
+    const tid = h.targetRoomId
+      ? typeof h.targetRoomId === 'object'
+        ? String(h.targetRoomId._id || h.targetRoomId)
+        : String(h.targetRoomId)
+      : '';
+    setTargetRoomId(tid);
+    setFeatureDescription(h.description || h.text || '');
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setPendingAngles(null);
+    setEditIndex(null);
+  }
 
   const handlePanoramaMouseUp = useCallback((event) => {
     const inst = pannellumRef.current;
@@ -106,7 +150,6 @@ export default function HotspotEditor() {
     let yaw = null;
     let pitch = null;
 
-    // Accurate click capture: map mouse event -> pano coordinates.
     if (event && typeof viewer.mouseEventToCoords === 'function') {
       try {
         const coords = viewer.mouseEventToCoords(event);
@@ -119,7 +162,6 @@ export default function HotspotEditor() {
       }
     }
 
-    // Fallback to view center if click mapping is unavailable.
     if ((yaw == null || pitch == null) && typeof viewer.getYaw === 'function' && typeof viewer.getPitch === 'function') {
       yaw = toFiniteNumber(viewer.getYaw());
       pitch = toFiniteNumber(viewer.getPitch());
@@ -128,16 +170,26 @@ export default function HotspotEditor() {
       return;
     }
 
-    setPendingAngles({ yaw, pitch });
-    setHotspotType('navigation');
-    setTargetRoomId('');
-    setFeatureDescription('');
-    setModalOpen(true);
+    openCreateModal(yaw, pitch);
   }, []);
 
-  function closeModal() {
-    setModalOpen(false);
-    setPendingAngles(null);
+  async function persistHotspots(nextList) {
+    const payload = nextList.map(serializeHotspot);
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/rooms/${roomId}/hotspots`, { hotspots: payload });
+      const updated = data?.data;
+      const next = Array.isArray(updated?.hotspots) ? updated.hotspots : nextList;
+      setHotspots(next);
+      closeModal();
+      await load();
+    } catch (err) {
+      console.error('HotspotEditor: save hotspots failed', err);
+      const msg = err.response?.data?.message || err.message || 'Save failed';
+      window.alert(msg);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSaveHotspot(e) {
@@ -173,7 +225,7 @@ export default function HotspotEditor() {
     const normalizedYaw = Math.round(pendingAngles.yaw * 10000) / 10000;
     const normalizedPitch = Math.round(pendingAngles.pitch * 10000) / 10000;
 
-    const newHotspot = {
+    const entry = {
       type: hotspotType,
       yaw: normalizedYaw,
       pitch: normalizedPitch,
@@ -182,25 +234,25 @@ export default function HotspotEditor() {
       targetRoomId: hotspotType === 'navigation' ? navTarget : null,
     };
 
-    const payload = [...hotspots, newHotspot];
-    setSaving(true);
-    try {
-      const { data } = await api.put(`/rooms/${roomId}/hotspots`, { hotspots: payload });
-      const updated = data?.data;
-      const next = Array.isArray(updated?.hotspots) ? updated.hotspots : payload;
-      setHotspots(next);
-      closeModal();
-      await load();
-    } catch (err) {
-      console.error('HotspotEditor: save hotspots failed', err);
-      const msg = err.response?.data?.message || err.message || 'Save failed';
-      window.alert(msg);
-    } finally {
-      setSaving(false);
+    const next =
+      editIndex != null
+        ? hotspots.map((h, i) => (i === editIndex ? { ...h, ...entry } : h))
+        : [...hotspots, entry];
+
+    await persistHotspots(next);
+  }
+
+  async function deleteHotspot(index) {
+    if (!window.confirm('Delete this hotspot?')) {
+      return;
     }
+    const next = hotspots.filter((_, i) => i !== index);
+    await persistHotspots(next);
   }
 
   const imageUrl = room?.imageUrl;
+  const roleLabel =
+    user?.role === 'admin' || user?.role === 'manager' ? 'Staff editor' : 'Seller editor';
 
   const hotspotElements = useMemo(() => {
     if (!Array.isArray(hotspots) || hotspots.length === 0) {
@@ -272,16 +324,17 @@ export default function HotspotEditor() {
         >
           ← Rooms
         </Link>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-blue-600">Step 3 of 3</p>
+        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-blue-600">
+          Step 3 of 3 · {roleLabel}
+        </p>
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Hotspots — {room.name}</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          <strong>Click</strong> (press and release) on the panorama where you want a hotspot. A form
-          will open with the captured <span className="font-mono text-slate-800">yaw</span> and{' '}
-          <span className="font-mono text-slate-800">pitch</span>.
+          <strong>Click</strong> the panorama to add a hotspot. Use the list below to edit or delete
+          navigation and feature points.
         </p>
       </div>
 
-      <div className="h-[80vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+      <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <Pannellum
           ref={pannellumRef}
           width="100%"
@@ -298,13 +351,66 @@ export default function HotspotEditor() {
         </Pannellum>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <span className="font-medium text-slate-800">Hotspots placed:</span> {hotspots.length}
-        {pendingAngles && !modalOpen ? (
-          <span className="ml-3 font-mono text-xs text-slate-500">
-            Last angles: yaw {formatAngle(pendingAngles.yaw)}°, pitch {formatAngle(pendingAngles.pitch)}°
-          </span>
-        ) : null}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">
+          Placed hotspots ({hotspots.length})
+        </h2>
+        {hotspots.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-500">None yet — click the panorama to add one.</p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {hotspots.map((h, index) => {
+              const target =
+                h.type === 'navigation'
+                  ? otherRooms.find(
+                      (r) =>
+                        String(r._id) ===
+                        String(
+                          typeof h.targetRoomId === 'object'
+                            ? h.targetRoomId?._id || h.targetRoomId
+                            : h.targetRoomId
+                        )
+                    )
+                  : null;
+              return (
+                <li
+                  key={h._id || `list-${index}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                >
+                  <div className="min-w-0 text-sm">
+                    <p className="font-medium capitalize text-slate-900">
+                      {h.type}
+                      {h.type === 'navigation' && target ? ` → ${target.name}` : ''}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {h.type === 'feature' ? h.description || h.text : h.text || 'Navigation'}
+                      {' · '}
+                      yaw {formatAngle(h.yaw)}° / pitch {formatAngle(h.pitch)}°
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => openEditModal(index)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => deleteHotspot(index)}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {modalOpen && pendingAngles ? (
@@ -316,7 +422,7 @@ export default function HotspotEditor() {
         >
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
             <h2 id="hs-modal-title" className="text-lg font-semibold text-slate-900">
-              New hotspot
+              {editIndex != null ? 'Edit hotspot' : 'New hotspot'}
             </h2>
             <p className="mt-1 font-mono text-xs text-slate-500">
               yaw {formatAngle(pendingAngles.yaw)}° · pitch {formatAngle(pendingAngles.pitch)}°
@@ -400,6 +506,8 @@ export default function HotspotEditor() {
                       <Spinner className="h-4 w-4 border-white/40 border-t-white" />
                       Saving…
                     </>
+                  ) : editIndex != null ? (
+                    'Update hotspot'
                   ) : (
                     'Save hotspot'
                   )}

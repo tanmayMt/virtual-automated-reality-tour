@@ -4,6 +4,8 @@ const {
   createRoom,
   uploadRoomImage,
   updateRoomHotspots,
+  updateRoom,
+  deleteRoom,
 } = require('../controllers/roomController');
 const { authenticate, requireListingEditor } = require('../middleware/auth');
 
@@ -26,6 +28,8 @@ router.post(
 );
 
 router.post('/', authenticate, requireListingEditor, createRoom);
+router.patch('/:id', authenticate, requireListingEditor, updateRoom);
+router.delete('/:id', authenticate, requireListingEditor, deleteRoom);
 router.put('/:id/hotspots', authenticate, requireListingEditor, updateRoomHotspots);
 
 module.exports = router;

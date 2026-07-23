@@ -158,8 +158,86 @@ const updateRoomHotspots = asyncHandler(async (req, res) => {
   res.json({ success: true, data: updated });
 });
 
+/**
+ * PATCH /api/rooms/:id
+ * Body: { name?, imageUrl? }
+ */
+const updateRoom = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    throw new AppError('Invalid room id', 400);
+  }
+
+  const room = await Room.findById(id);
+  if (!room) {
+    throw new AppError('Room not found', 404);
+  }
+
+  const listing = await Listing.findById(room.listingId);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+  if (!canEditListing(req.user, listing)) {
+    throw new AppError('You do not have access to this listing', 403);
+  }
+
+  const { name, imageUrl } = req.body;
+  if (name != null) {
+    const trimmed = String(name).trim();
+    if (!trimmed) {
+      throw new AppError('name cannot be empty', 400);
+    }
+    room.name = trimmed;
+  }
+  if (imageUrl != null) {
+    const url = String(imageUrl).trim();
+    if (!url) {
+      throw new AppError('imageUrl cannot be empty', 400);
+    }
+    room.imageUrl = url;
+  }
+
+  await room.save();
+  res.json({ success: true, data: room });
+});
+
+/**
+ * DELETE /api/rooms/:id
+ */
+const deleteRoom = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    throw new AppError('Invalid room id', 400);
+  }
+
+  const room = await Room.findById(id);
+  if (!room) {
+    throw new AppError('Room not found', 404);
+  }
+
+  const listing = await Listing.findById(room.listingId);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+  if (!canEditListing(req.user, listing)) {
+    throw new AppError('You do not have access to this listing', 403);
+  }
+
+  listing.rooms = (listing.rooms || []).filter((rid) => String(rid) !== String(id));
+  await listing.save();
+  await Room.deleteOne({ _id: id });
+
+  res.json({ success: true, data: { id } });
+});
+
+/**
+ * PUT /api/listings/:listingId/rooms/order — handled in listing controller
+ * (exported from room controller for reuse if needed)
+ */
 module.exports = {
   createRoom,
   uploadRoomImage,
   updateRoomHotspots,
+  updateRoom,
+  deleteRoom,
 };

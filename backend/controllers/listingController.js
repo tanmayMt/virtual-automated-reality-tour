@@ -3,7 +3,7 @@ const Listing = require('../models/Listing');
 const User = require('../models/User');
 const asyncHandler = require('../middleware/asyncHandler');
 const AppError = require('../utils/AppError');
-const { isStaff } = require('../utils/roles');
+const { isStaff, canEditListing } = require('../utils/roles');
 
 const PROPERTY_TYPES = new Set([
   'apartment',
@@ -330,8 +330,7 @@ const updateListing = asyncHandler(async (req, res) => {
     throw new AppError('Listing not found', 404);
   }
 
-  const owns = listing.sellerId && String(listing.sellerId) === String(req.user._id);
-  if (!isStaff(req.user) && !owns) {
+  if (!canEditListing(req.user, listing)) {
     throw new AppError('Not allowed to update this listing', 403);
   }
 
@@ -375,6 +374,82 @@ const getListingById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: listing });
 });
 
+/**
+ * PUT /api/listings/:id/rooms/order
+ * Body: { roomIds: string[] } — must be a permutation of existing rooms
+ */
+const reorderListingRooms = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { roomIds } = req.body;
+
+  if (!mongoose.isValidObjectId(id)) {
+    throw new AppError('Invalid listing id', 400);
+  }
+  if (!Array.isArray(roomIds) || roomIds.length === 0) {
+    throw new AppError('roomIds must be a non-empty array', 400);
+  }
+
+  const listing = await Listing.findById(id);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+  if (!canEditListing(req.user, listing)) {
+    throw new AppError('Not allowed to update this listing', 403);
+  }
+
+  const current = (listing.rooms || []).map((r) => String(r));
+  const next = roomIds.map((r) => String(r));
+
+  if (next.length !== current.length) {
+    throw new AppError('roomIds must include every room exactly once', 400);
+  }
+  const currentSet = new Set(current);
+  for (const rid of next) {
+    if (!mongoose.isValidObjectId(rid) || !currentSet.has(rid)) {
+      throw new AppError('roomIds contains an invalid or unknown room id', 400);
+    }
+  }
+  if (new Set(next).size !== next.length) {
+    throw new AppError('roomIds must not contain duplicates', 400);
+  }
+
+  listing.rooms = next;
+  await listing.save();
+
+  const populated = await Listing.findById(listing._id)
+    .populate('rooms')
+    .populate('sellerId', 'name email role');
+
+  res.json({ success: true, data: populated });
+});
+
+/**
+ * DELETE /api/listings/:id — removes listing and its rooms
+ */
+const deleteListing = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    throw new AppError('Invalid listing id', 400);
+  }
+
+  const listing = await Listing.findById(id);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+  if (!canEditListing(req.user, listing)) {
+    throw new AppError('Not allowed to delete this listing', 403);
+  }
+
+  const Room = require('../models/Room');
+  const roomIds = Array.isArray(listing.rooms) ? listing.rooms : [];
+  if (roomIds.length > 0) {
+    await Room.deleteMany({ _id: { $in: roomIds } });
+  }
+  await Listing.deleteOne({ _id: id });
+
+  res.json({ success: true, data: { id } });
+});
+
 module.exports = {
   getAllListings,
   listListings,
@@ -382,4 +457,6 @@ module.exports = {
   updateListing,
   getListingById,
   suggestListings,
+  reorderListingRooms,
+  deleteListing,
 };
