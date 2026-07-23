@@ -25,6 +25,10 @@ export function getStoredUser() {
   }
 }
 
+export function getStoredToken() {
+  return localStorage.getItem('token');
+}
+
 export function clearAuthStorage() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');

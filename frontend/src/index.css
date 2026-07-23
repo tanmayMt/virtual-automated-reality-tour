@@ -12,6 +12,11 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
+.dark body,
+html.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
 /* Pannellum — seller dashboard (rounded) */
 .pnlm-container {
   border-radius: 0.75rem;
@@ -213,4 +218,48 @@ body {
   font-size: 0.75rem;
   line-height: 1.45;
   color: rgba(226, 232, 240, 0.88);
+}
+
+/* Annotation hotspot — amber pin for info points */
+.tour-annotation-info {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.9));
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tour-annotation-info::before {
+  content: '!';
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+}
+
+.tour-annotation-info[data-feature-label]:hover::after,
+.tour-annotation-info[data-feature-label]:focus-visible::after {
+  content: attr(data-feature-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translateX(-50%);
+  min-width: max-content;
+  max-width: min(14rem, 62vw);
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(2, 6, 23, 0.92);
+  color: rgba(255, 255, 255, 0.97);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
 }

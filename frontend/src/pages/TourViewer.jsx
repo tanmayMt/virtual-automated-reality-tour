@@ -36,7 +36,6 @@ export default function TourViewer() {
     [rooms, currentRoomId]
   );
 
-  /** Validates id against loaded rooms before updating state. */
   const setCurrentRoomIdSafe = useCallback(
     (roomId) => {
       const id = String(roomId);
@@ -167,12 +166,10 @@ export default function TourViewer() {
 
   return (
     <div className="tour-fullscreen fixed inset-0 z-[150] h-[100vh] w-[100vw] overflow-hidden bg-black">
-      {/* Full-screen 360° layer — explicit viewport size for Pannellum */}
       <div className="absolute inset-0 h-screen w-screen">
         <PanoramaCanvas currentRoom={currentRoom} setCurrentRoomId={setCurrentRoomIdSafe} />
       </div>
 
-      {/* Top header — glass strip */}
       <header className="pointer-events-none absolute left-0 right-0 top-0 z-40 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5">
         <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-3 rounded-2xl border border-white/10 bg-black/50 px-4 py-3 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-3.5">
           <div className="min-w-0 flex-1">

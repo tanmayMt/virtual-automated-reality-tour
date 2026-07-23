@@ -53,9 +53,9 @@ export default function PropertyIntro() {
     navigate(`/tour/${listingId}`);
   }
 
-  const hasVideo = typeof listing?.introVideoUrl === 'string' && listing.introVideoUrl.trim() !== '';
   const addressQuery = encodeURIComponent(listing?.address || '');
   const mapEmbedUrl = `https://www.google.com/maps?q=${addressQuery}&z=16&output=embed`;
+  const nearby = Array.isArray(listing?.nearbyPlaces) ? listing.nearbyPlaces : [];
 
   if (loading) {
     return <IntroSkeleton />;
@@ -79,36 +79,24 @@ export default function PropertyIntro() {
 
   return (
     <section className="fixed inset-0 h-screen w-screen overflow-hidden bg-black text-white">
-      {hasVideo ? (
-        <video
-          className="h-full w-full object-cover"
-          src={listing.introVideoUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
-          onEnded={enterTour}
-        />
-      ) : (
-        <div className="relative h-full w-full overflow-hidden">
-          <div className="absolute inset-0 scale-110 animate-[droneSweep_18s_ease-in-out_infinite_alternate]">
-            <iframe
-              title="Property location map"
-              src={mapEmbedUrl}
-              className="h-full w-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          </div>
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,0.18)_45%,rgba(0,0,0,0.55)_100%)]" />
-          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.85)]" />
-          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/80 animate-ping" />
-          <div className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-sm">
-            Drone-style location preview
-          </div>
+      <div className="relative h-full w-full overflow-hidden">
+        <div className="absolute inset-0 scale-110 animate-[droneSweep_18s_ease-in-out_infinite_alternate]">
+          <iframe
+            title="Property location map"
+            src={mapEmbedUrl}
+            className="h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
         </div>
-      )}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,0.18)_45%,rgba(0,0,0,0.55)_100%)]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.85)]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/80 animate-ping" />
+        <div className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-sm">
+          Drone-style location preview
+        </div>
+      </div>
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/35" />
 
@@ -125,13 +113,38 @@ export default function PropertyIntro() {
       <div className="absolute inset-x-0 top-10 z-20 px-4 text-center">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{listing.title}</h1>
         <p className="mt-2 text-sm text-white/80 sm:text-base">{listing.address}</p>
+        <p className="mt-2 text-lg font-semibold">
+          {typeof listing.price === 'number' ? `$${listing.price.toLocaleString()}` : ''}
+          {listing.bedrooms != null ? ` · ${listing.bedrooms} bed` : ''}
+          {listing.bathrooms != null ? ` · ${listing.bathrooms} bath` : ''}
+          {listing.areaSqft ? ` · ${listing.areaSqft.toLocaleString()} sqft` : ''}
+        </p>
+        {listing.sellerId?.name ? (
+          <p className="mt-1 text-sm text-white/70">Seller: {listing.sellerId.name}</p>
+        ) : null}
       </div>
 
-      <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
+      {nearby.length > 0 ? (
+        <div className="absolute bottom-28 left-4 right-4 z-20 mx-auto max-w-3xl">
+          <ul className="flex flex-wrap justify-center gap-2">
+            {nearby.slice(0, 6).map((place, i) => (
+              <li
+                key={`${place.name}-${i}`}
+                className="rounded-full border border-white/20 bg-black/45 px-3 py-1 text-xs text-white/90 backdrop-blur-sm"
+              >
+                {place.type}: {place.name}
+                {place.distanceKm != null ? ` (${place.distanceKm} km)` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="absolute inset-0 z-20 flex items-center justify-center px-4 pointer-events-none">
         <button
           type="button"
           onClick={enterTour}
-          className="rounded-2xl border border-blue-300/55 bg-blue-600/85 px-8 py-4 text-lg font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.55)] transition duration-300 hover:scale-105 hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          className="pointer-events-auto rounded-2xl border border-blue-300/55 bg-blue-600/85 px-8 py-4 text-lg font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.55)] transition duration-300 hover:scale-105 hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
         >
           Enter Virtual Tour
         </button>
@@ -145,4 +158,3 @@ export default function PropertyIntro() {
     </section>
   );
 }
-

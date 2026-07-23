@@ -12,6 +12,7 @@ import HotspotEditorPage from './pages/HotspotEditorPage.jsx';
 import RoomManager from './components/RoomManager.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import SellerOnlyRoute from './components/SellerOnlyRoute.jsx';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import { clearAuthStorage, getStoredUser } from './utils/authStorage.js';
 
 function AppHeader() {
@@ -29,11 +30,11 @@ function AppHeader() {
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-md">
+    <header className="border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
         <NavLink
           to="/seller/dashboard"
-          className="text-lg font-semibold tracking-tight text-slate-900 transition hover:text-blue-700"
+          className="text-lg font-semibold tracking-tight text-slate-900 transition hover:text-blue-700 dark:text-white"
         >
           Virtual Tour
           <span className="ml-2 text-sm font-normal text-slate-500">Seller</span>
@@ -42,7 +43,7 @@ function AppHeader() {
           <NavLink
             to="/seller/dashboard"
             className={({ isActive }) =>
-              `rounded-lg px-3 py-2 font-medium transition ${isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`
+              `rounded-lg px-3 py-2 font-medium transition ${isActive ? 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'}`
             }
           >
             Dashboard
@@ -50,15 +51,16 @@ function AppHeader() {
           <NavLink
             to="/seller/create"
             className={({ isActive }) =>
-              `rounded-lg px-3 py-2 font-medium transition ${isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`
+              `rounded-lg px-3 py-2 font-medium transition ${isActive ? 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'}`
             }
           >
             New tour
           </NavLink>
+          <ThemeToggle />
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-lg px-3 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="rounded-lg px-3 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Log out
           </button>
@@ -70,7 +72,7 @@ function AppHeader() {
 
 function SellerLayout() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <AppHeader />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <Outlet />
@@ -85,7 +87,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/property/:listingId" element={<PropertyIntro />} />
-        {/* Buyer 360° viewer — `listingId` in TourViewer via useParams() */}
         <Route path="/tour/:listingId" element={<TourViewer />} />
         <Route
           path="/buyer-dashboard"
@@ -122,7 +123,6 @@ export default function App() {
               </SellerOnlyRoute>
             }
           />
-          {/* Seller hotspot editor — `listingId` & `roomId` in HotspotEditor via useParams() */}
           <Route
             path="/seller/listing/:listingId/room/:roomId/hotspots"
             element={
