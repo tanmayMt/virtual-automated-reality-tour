@@ -7,8 +7,9 @@ const PORT = Number(process.env.PORT) || 5000;
 
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
+    // 0.0.0.0 required on Render / most PaaS hosts
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server listening on port ${PORT}`);
     });
   })
   .catch((err) => {
